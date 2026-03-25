@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Douyin Video Downloader</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            font-size: 40px;
+            color: white;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            color: #555;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .url-input {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .url-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .url-input::placeholder {
+            color: #aaa;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .btn.loading .spinner {
+            display: block;
+        }
+
+        .btn.loading .btn-text {
+            display: none;
+        }
+
+        .result {
+            margin-top: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .video-info {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .info-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .info-label {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .info-value {
+            color: #333;
+            font-weight: 600;
+            font-family: monospace;
+            background: #f0f0f0;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .instructions {
+            background: #e8f4fd;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #bee5eb;
+        }
+
+        .instructions-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #0c5460;
+            margin-bottom: 10px;
+        }
+
+        .instructions ol {
+            margin: 0;
+            padding-left: 20px;
+            color: #0c5460;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .instructions li {
+            margin-bottom: 8px;
+        }
+
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            margin-top: 10px;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .code-block::before {
+            content: 'Python';
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            font-size: 10px;
+            color: #718096;
+            text-transform: uppercase;
+        }
+
+        .error {
+            background: #fed7d7;
+            border-left-color: #e53e3e;
+            color: #c53030;
+        }
+
+        .error .result-title {
+            color: #c53030;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 13px;
+        }
+
+        .footer a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        .examples {
+            margin-top: 15px;
+            padding: 12px;
+            background: #f0f0f0;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .examples strong {
+            color: #333;
+        }
+
+        .example-url {
+            color: #667eea;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .example-url:hover {
+            color: #764ba2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="logo">
+                <div class="logo-icon">📹</div>
+                <h1>Douyin Downloader</h1>
+                <p class="subtitle">Parse Douyin video URLs and download with Python</p>
+            </div>
+
+            <div class="input-group">
+                <label for="urlInput">Paste Douyin Video URL</label>
+                <input 
+                    type="text" 
+                    id="urlInput" 
+                    class="url-input" 
+                    placeholder="https://v.douyin.com/xxxxx or https://www.douyin.com/video/xxxxx"
+                    autocomplete="off"
+                >
+            </div>
+
+            <div class="examples">
+                <strong>Example URLs:</strong><br>
+                <span class="example-url" onclick="fillExample('https://v.douyin.com/ABC123/')">https://v.douyin.com/ABC123/</span> or 
+                <span class="example-url" onclick="fillExample('https://www.douyin.com/video/1234567890')">https://www.douyin.com/video/1234567890</span>
+            </div>
+
+            <button class="btn" id="parseBtn" onclick="parseUrl()">
+                <div class="spinner"></div>
+                <span class="btn-text">🔍 Parse Video URL</span>
+            </button>
+
+            <div class="result" id="result">
+                <div class="result-title">✅ Video Parsed Successfully</div>
+                <div class="video-info">
+                    <div class="info-row">
+                        <span class="info-label">Video ID:</span>
+                        <span class="info-value" id="videoId">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">URL Type:</span>
+                        <span class="info-value" id="urlType">-</span>
+                    </div>
+                </div>
+                <div class="instructions">
+                    <div class="instructions-title">📥 Download Instructions</div>
+                    <ol>
+                        <li>Install the Douyin downloader tool:</li>
+                    </ol>
+                    <div class="code-block">pip install douyin-downloader</div>
+                    <ol start="2">
+                        <li>Run the downloader with the video URL:</li>
+                    </ol>
+                    <div class="code-block" id="codeExample">douyin-dl "YOUR_URL_HERE"</div>
+                    <ol start="3">
+                        <li>The video will be downloaded to your current directory!</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="result error" id="errorResult">
+                <div class="result-title">❌ Invalid URL</div>
+                <p id="errorMessage">Please enter a valid Douyin video URL.</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            Made with ❤️ for Douyin video downloading · 
+            <a href="https://github.com/goddamn1999/douyin-downloader" target="_blank">GitHub Repo</a>
+        </div>
+    </div>
+
+    <script>
+        // Auto-focus on input when page loads
+        document.getElementById('urlInput').focus();
+
+        // Handle Enter key
+        document.getElementById('urlInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                parseUrl();
+            }
+        });
+
+        function fillExample(url) {
+            document.getElementById('urlInput').value = url;
+            document.getElementById('urlInput').focus();
+        }
+
+        function parseUrl() {
+            const urlInput = document.getElementById('urlInput');
+            const parseBtn = document.getElementById('parseBtn');
+            const result = document.getElementById('result');
+            const errorResult = document.getElementById('errorResult');
+            const url = urlInput.value.trim();
+
+            // Hide previous results
+            result.classList.remove('show');
+            errorResult.classList.remove('show');
+
+            if (!url) {
+                showError('Please enter a Douyin video URL.');
+                return;
+            }
+
+            // Show loading state
+            parseBtn.classList.add('loading');
+            parseBtn.disabled = true;
+
+            // Simulate processing delay for better UX
+            setTimeout(() => {
+                const parsed = extractVideoInfo(url);
+
+                if (parsed) {
+                    showResult(parsed);
+                } else {
+                    showError('Could not parse the URL. Please make sure it\'s a valid Douyin video URL.');
+                }
+
+                // Reset button state
+                parseBtn.classList.remove('loading');
+                parseBtn.disabled = false;
+            }, 600);
+        }
+
+        function extractVideoInfo(url) {
+            // Pattern 1: Short URL (v.douyin.com/xxxxx)
+            const shortUrlPattern = /v\.douyin\.com\/([a-zA-Z0-9]+)/i;
+            // Pattern 2: Full URL (douyin.com/video/xxxxx)
+            const fullUrlPattern = /douyin\.com\/video\/(\d+)/i;
+            // Pattern 3: Web share URL (webcast or share URLs)
+            const webcastPattern = /webcast\/.*\/(\d+)/i;
+
+            let match;
+            let videoId = null;
+            let urlType = null;
+
+            if ((match = url.match(shortUrlPattern))) {
+                videoId = match[1];
+                urlType = 'Short URL';
+            } else if ((match = url.match(fullUrlPattern))) {
+                videoId = match[1];
+                urlType = 'Full URL';
+            } else if ((match = url.match(webcastPattern))) {
+                videoId = match[1];
+                urlType = 'Webcast URL';
+            }
+
+            if (videoId) {
+                return {
+                    videoId: videoId,
+                    urlType: urlType,
+                    originalUrl: url
+                };
+            }
+
+            return null;
+        }
+
+        function showResult(data) {
+            const result = document.getElementById('result');
+            document.getElementById('videoId').textContent = data.videoId;
+            document.getElementById('urlType').textContent = data.urlType;
+            document.getElementById('codeExample').textContent = `douyin-dl "${data.originalUrl}"`;
+            result.classList.add('show');
+            
+            // Scroll to result on mobile
+            result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function showError(message) {
+            const errorResult = document.getElementById('errorResult');
+            document.getElementById('errorMessage').textContent = message;
+            errorResult.classList.add('show');
+        }
+    </script>
+</body>
+</html>
