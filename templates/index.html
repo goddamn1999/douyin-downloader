@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>抖音视频下载器 - Douyin Downloader</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎵 抖音视频下载器</h1>
+            <p>免费、快速、无水印下载抖音视频</p>
+        </header>
+
+        <main>
+            <div class="input-section">
+                <div class="input-group">
+                    <input type="text" id="videoUrl" placeholder="粘贴抖音视频链接，如: https://v.douyin.com/xxxxx 或 https://www.douyin.com/video/xxxxx">
+                    <button id="downloadBtn" onclick="parseVideo()">
+                        <span class="btn-text">解析链接</span>
+                        <span class="btn-loading" style="display:none;">解析中...</span>
+                    </button>
+                </div>
+                <div class="tips">
+                    <p>💡 支持：单视频、图集、合集、音乐、用户主页</p>
+                    <p>📱 支持抖音短链接 v.douyin.com 自动解析</p>
+                </div>
+            </div>
+
+            <div id="loading" class="loading-section" style="display:none;">
+                <div class="spinner"></div>
+                <p>正在解析链接...</p>
+            </div>
+
+            <div id="error" class="error-section" style="display:none;">
+                <p>❌ <span id="errorMsg"></span></p>
+            </div>
+
+            <div id="result" class="result-section" style="display:none;">
+                <div class="video-info">
+                    <img id="cover" src="" alt="视频封面">
+                    <div class="info">
+                        <h3 id="title"></h3>
+                        <p id="type"></p>
+                        <p id="id"></p>
+                    </div>
+                </div>
+
+                <div class="code-section">
+                    <h4>📥 下载方法（选择一种）</h4>
+                    
+                    <div class="method-tabs">
+                        <button class="method-tab active" onclick="switchTab('cli')">命令行</button>
+                        <button class="method-tab" onclick="switchTab('docker')">Docker</button>
+                        <button class="method-tab" onclick="switchTab('config')">配置文件</button>
+                    </div>
+
+                    <div id="tab-cli" class="tab-content active">
+                        <div class="code-block">
+                            <pre id="cliCommand"></pre>
+                        </div>
+                        <button class="copy-btn" onclick="copyCode('cliCommand')">复制命令</button>
+                    </div>
+
+                    <div id="tab-docker" class="tab-content">
+                        <div class="code-block">
+                            <pre id="dockerCommand"># 1. 构建镜像
+docker build -t douyin-downloader .
+
+# 2. 运行（替换下面链接）
+docker run -v $(pwd)/downloads:/app/Downloaded \\
+  douyin-downloader \\
+  python run.py -u "抖音链接"</pre>
+                        </div>
+                        <button class="copy-btn" onclick="copyDockerCommand()">复制命令</button>
+                    </div>
+
+                    <div id="tab-config" class="tab-content">
+                        <div class="code-block">
+                            <pre># 1. 复制配置文件
+cp config.example.yml config.yml
+
+# 2. 编辑 config.yml，在 link: 下添加你的链接
+# 例如：
+# link:
+#   - https://www.douyin.com/video/xxxxx
+
+# 3. 运行
+python run.py -c config.yml</pre>
+                        </div>
+                    </div>
+
+                    <div class="warning-box">
+                        <p>⚠️ 由于抖音 API 需要登录 Cookie，Web 版无法直接下载。</p>
+                        <p>请在本地电脑或服务器上运行上述命令来完成下载。详情见 <a href="https://github.com/goddamn1999/douyin-downloader#quick-start" target="_blank">GitHub 文档</a></p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>基于 <a href="https://github.com/jiji262/douyin-downloader" target="_blank">jiji262/douyin-downloader</a> 构建</p>
+            <p><a href="https://github.com/goddamn1999/douyin-downloader" target="_blank">GitHub 仓库</a> | MIT License</p>
+        </footer>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+
+        async function parseVideo() {
+            const urlInput = document.getElementById('videoUrl');
+            const url = urlInput.value.trim();
+            
+            if (!url) {
+                showError('请输入抖音视频链接');
+                return;
+            }
+            
+            showLoading();
+            setButtonLoading(true);
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/parse`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: url })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showResult(data.data);
+                } else {
+                    showError(data.message || '解析失败');
+                }
+            } catch (error) {
+                showError('请求失败，请稍后重试');
+                console.error(error);
+            } finally {
+                setButtonLoading(false);
+            }
+        }
+
+        function showResult(data) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('result').style.display = 'block';
+            
+            document.getElementById('cover').src = data.cover || 'https://via.placeholder.com/200';
+            document.getElementById('title').textContent = data.title || '未命名';
+            document.getElementById('type').textContent = `📁 类型: ${data.type}`;
+            document.getElementById('id').textContent = `🆔 ID: ${data.id}`;
+            
+            // 生成命令
+            const cliCmd = `git clone https://github.com/goddamn1999/douyin-downloader.git
+cd douyin-downloader
+pip install -r requirements.txt
+python run.py -u "${data.resolved_url}"`;
+            
+            document.getElementById('cliCommand').textContent = cliCmd;
+        }
+
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('errorMsg').textContent = message;
+        }
+
+        function showLoading() {
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('loading').style.display = 'block';
+        }
+
+        function setButtonLoading(loading) {
+            const btn = document.getElementById('downloadBtn');
+            const btnText = btn.querySelector('.btn-text');
+            const btnLoading = btn.querySelector('.btn-loading');
+            
+            btn.disabled = loading;
+            btnText.style.display = loading ? 'none' : 'inline';
+            btnLoading.style.display = loading ? 'inline' : 'none';
+        }
+
+        function switchTab(tabName) {
+            // 切换 tab 按钮
+            document.querySelectorAll('.method-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // 切换内容
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+        }
+
+        function copyCode(elementId) {
+            const code = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✅ 已复制';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        function copyDockerCommand() {
+            const url = document.getElementById('videoUrl').value.trim();
+            const code = `docker build -t douyin-downloader .
+docker run -v $(pwd)/downloads:/app/Downloaded douyin-downloader python run.py -u "${url}"`;
+            
+            navigator.clipboard.writeText(code).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✅ 已复制';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        // 回车键提交
+        document.getElementById('videoUrl').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                parseVideo();
+            }
+        });
+    </script>
+</body>
+</html>
